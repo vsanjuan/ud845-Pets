@@ -58,4 +58,10 @@
 
     <!-- Label for dropdown menu option if the pet is female [CHAR LIMIT=20] -->
     <string name="gender_female">Female</string>
+
+    <!-- Label message error saving a pet -->
+    <string name="error_saving">"Error with saving pet"</string>
+
+    <!-- Message success saving a new pet into pets table -->
+    <string name="success_saving">"Pet saved with row id: "</string>
 </resources>

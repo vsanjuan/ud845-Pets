@@ -9,6 +9,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
+import android.util.Log;
 
 
 /**
@@ -43,7 +44,7 @@ public class PetProvider extends ContentProvider {
         // should recognize. All paths added to the UriMatcher have a corresponding code to return
         // when a match is found.
 
-        // TODO: Add 2 content URIs to URI matcher
+        // Add 2 content URIs to URI matcher
         sUriMatcher.addURI(PetContract.CONTENT_AUTHORITY, PetContract.PATH_PETS, PETS);
         sUriMatcher.addURI(PetContract.CONTENT_AUTHORITY, PetContract.PATH_PETS + "/#", PET_ID);
 
@@ -77,7 +78,7 @@ public class PetProvider extends ContentProvider {
 
         switch (match) {
             case PETS :
-                // TODO: Perform database query on pets table
+                // Perform database query on pets table
                 cursor = database.query(PetContract.PetEntry.TABLE_NAME, projection, selection,
                         selectionArgs,null,null,sortOrder);
                 break;
@@ -99,9 +100,34 @@ public class PetProvider extends ContentProvider {
      */
     @Override
     public Uri insert(Uri uri, ContentValues contentValues) {
-        return null;
+        final int match = sUriMatcher.match(uri);
+        switch (match) {
+            case PETS:
+                return insertPet(uri, contentValues);
+            default:
+                throw new IllegalArgumentException("Insertion is not supported for " + uri);
+        }
     }
 
+    /**
+     * Insert a pet into the database with the given content values. Return the new content URI
+     * for that specific row in the database.
+     */
+    private Uri insertPet(Uri uri, ContentValues values) {
+
+        // Insert a new pet into the pets database table with the given ContentValues
+        SQLiteDatabase db = mDbHelper.getWritableDatabase();
+
+        long newRowId = db.insert(PetContract.PetEntry.TABLE_NAME,null,values);
+
+        if (newRowId == -1) {
+            Log.e(LOG_TAG,"No insertion ");
+            return null;}
+
+        // Once we know the ID of the new row in the table,
+        // return the new URI with the ID appended to the end of it
+        return ContentUris.withAppendedId(uri, newRowId);
+    }
     /**
      * Updates the data at the given selection and selection arguments, with the new ContentValues.
      */
