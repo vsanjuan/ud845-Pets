@@ -150,7 +150,7 @@ public class EditorActivity extends AppCompatActivity {
             Toast.makeText(this, R.string.error_saving, Toast.LENGTH_SHORT).show();
         } else {
             // Otherwise, the insertion was successful and we can display a toast with the row ID.
-            Toast.makeText(this, R.string.error_saving ,
+            Toast.makeText(this, R.string.success_saving ,
                     Toast.LENGTH_SHORT).show();
         }
     }
