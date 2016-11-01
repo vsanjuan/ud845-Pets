@@ -60,8 +60,15 @@
     <string name="gender_female">Female</string>
 
     <!-- Label message error saving a pet -->
-    <string name="error_saving">"Error with saving pet"</string>
+    <string name="error_saving">Error with saving pet</string>
 
     <!-- Message success saving a new pet into pets table -->
-    <string name="success_saving">"Pet saved successfully "</string>
+    <string name="success_saving">Pet saved successfully</string>
+
+    <!-- Message empty view title -->
+    <string name="empty_view_title_text">We are alone</string>
+
+    <!-- Message empty view subtitle-->
+    <string name="empty_view_subtitle_text">Start by adding a pet</string>
+
 </resources>
