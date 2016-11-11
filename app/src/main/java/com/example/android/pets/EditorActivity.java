@@ -17,11 +17,17 @@ package com.example.android.pets;
 
 import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.v4.app.LoaderManager;
 import android.support.v4.app.NavUtils;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -32,22 +38,36 @@ import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.example.android.pets.data.PetContract.PetEntry;
+import com.example.android.pets.data.PetProvider;
+import com.google.android.gms.appindexing.Action;
+import com.google.android.gms.appindexing.AppIndex;
+import com.google.android.gms.appindexing.Thing;
+import com.google.android.gms.common.api.GoogleApiClient;
 
 /**
  * Allows user to create a new pet or edit an existing one.
  */
-public class EditorActivity extends AppCompatActivity {
+public class EditorActivity extends AppCompatActivity
+        implements LoaderManager.LoaderCallbacks<Cursor> {
 
-    /** EditText field to enter the pet's name */
+    /**
+     * EditText field to enter the pet's name
+     */
     private EditText mNameEditText;
 
-    /** EditText field to enter the pet's breed */
+    /**
+     * EditText field to enter the pet's breed
+     */
     private EditText mBreedEditText;
 
-    /** EditText field to enter the pet's weight */
+    /**
+     * EditText field to enter the pet's weight
+     */
     private EditText mWeightEditText;
 
-    /** EditText field to enter the pet's gender */
+    /**
+     * EditText field to enter the pet's gender
+     */
     private Spinner mGenderSpinner;
 
     /**
@@ -57,10 +77,41 @@ public class EditorActivity extends AppCompatActivity {
      */
     private int mGender = PetEntry.GENDER_UNKNOWN;
 
+    private Uri mCurrentUri;
+
+
+    /**
+     * Position of the record to Edit
+     * */
+    private int cursorIndex;
+
+
+    /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+    private GoogleApiClient client;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_editor);
+
+        // Get Uri from the intent
+        Intent intent = getIntent();
+        mCurrentUri = intent.getData();
+
+
+
+        // Change the activity title depending on how the Activity was reached
+        // If the intent DOES NOT contain an Uri we know that we are creating a new pet
+        if (mCurrentUri == null) {
+            setTitle(getString(R.string.editor_activity_title_new_pet));
+        } else {
+            setTitle("Edit pet");
+            Log.i("Intent", mCurrentUri.toString());
+        }
+
 
         // Find all relevant views that we will need to read user input from
         mNameEditText = (EditText) findViewById(R.id.edit_pet_name);
@@ -69,6 +120,13 @@ public class EditorActivity extends AppCompatActivity {
         mGenderSpinner = (Spinner) findViewById(R.id.spinner_gender);
 
         setupSpinner();
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
+
+        // Initialize the loader
+        getSupportLoaderManager().initLoader(0,null,this);
+
     }
 
     /**
@@ -111,9 +169,11 @@ public class EditorActivity extends AppCompatActivity {
     }
 
     /**
-     * Get user input from editor and save new pet into database.
-     */
-    private void insertPet() {
+     * Get user input from the editor an return a ContentValue object
+     *
+     * */
+    private ContentValues getUserInput() {
+
         // Read from input fields
         // Use trim to eliminate leading or trailing white space
         String nameString = mNameEditText.getText().toString().trim();
@@ -121,11 +181,6 @@ public class EditorActivity extends AppCompatActivity {
         String weightString = mWeightEditText.getText().toString().trim();
         int weight = Integer.parseInt(weightString);
 
-        // Create database helper
-        //PetDbHelper mDbHelper = new PetDbHelper(this);
-
-        // Gets the database in write mode
-        //SQLiteDatabase db = mDbHelper.getWritableDatabase();
 
         // Create a ContentValues object where column names are the keys,
         // and pet attributes from the editor are the values.
@@ -135,12 +190,20 @@ public class EditorActivity extends AppCompatActivity {
         values.put(PetEntry.COLUMN_PET_GENDER, mGender);
         values.put(PetEntry.COLUMN_PET_WEIGHT, weight);
 
+        return values;
+
+    }
+
+    /**
+     * Get user input from editor and save new pet into database.
+     */
+    private void savePet() {
+
+
         // Insert a new row for pet in the database, returning the ID of that new row.
         //long newRowId = db.insert(PetEntry.TABLE_NAME, null, values);
 
-        //PetProvider petProvider = new PetProvider();
-
-        Uri uri = getContentResolver().insert(PetEntry.CONTENT_URI,values);
+        Uri uri = getContentResolver().insert(PetEntry.CONTENT_URI, getUserInput());
 
         long newRowId = ContentUris.parseId(uri);
 
@@ -150,9 +213,32 @@ public class EditorActivity extends AppCompatActivity {
             Toast.makeText(this, R.string.error_saving, Toast.LENGTH_SHORT).show();
         } else {
             // Otherwise, the insertion was successful and we can display a toast with the row ID.
-            Toast.makeText(this, R.string.success_saving ,
+            Toast.makeText(this, R.string.success_saving,
                     Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void updatePet() {
+
+        // Update row for pet in the database, returning the ID of that new row.
+        String selection = PetEntry._ID + "=" ;
+        String[] selectionArgs = {Integer.toString(cursorIndex)};
+
+        int rowId = getContentResolver().update(PetEntry.CONTENT_URI, getUserInput(),
+                selection,selectionArgs);
+
+
+        // Show a toast message depending on whether or not the insertion was successful
+        if (rowId == -1) {
+            // If the row ID is -1, then there was an error with insertion.
+            Toast.makeText(this, R.string.error_saving, Toast.LENGTH_SHORT).show();
+        } else {
+            // Otherwise, the insertion was successful and we can display a toast with the row ID.
+            Toast.makeText(this, R.string.success_saving,
+                    Toast.LENGTH_SHORT).show();
+        }
+
+
     }
 
     @Override
@@ -170,7 +256,14 @@ public class EditorActivity extends AppCompatActivity {
             // Respond to a click on the "Save" menu option
             case R.id.action_save:
                 // Save pet to database
-                insertPet();
+                if (mCurrentUri == null) {
+                    savePet();
+                } else {
+                    updatePet();
+                }
+
+
+
                 // Exit activity
                 finish();
                 return true;
@@ -185,5 +278,94 @@ public class EditorActivity extends AppCompatActivity {
                 return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public Loader onCreateLoader(int id, Bundle args) {
+
+        PetProvider petProvider = new PetProvider();
+
+        if ( petProvider.getType(mCurrentUri) == PetEntry.CONTENT_ITEM_TYPE) {
+
+        return new CursorLoader(
+                this,                       // Activity context
+                mCurrentUri,                 // Table to query
+                null,                       // Projection to return
+                null,                       // No selection clause
+                null,                       // No selection arguments
+                null                        // Default sort order
+
+        );} else {
+
+            throw new IllegalArgumentException("This URI is not right");
+
+        }
+
+    }
+
+    @Override
+    public void onLoadFinished(Loader loader, Cursor cursor) {
+
+        cursor.moveToFirst();
+        
+        // Retrieves the values
+        cursorIndex = cursor.getInt(cursor.getColumnIndex(PetEntry._ID));
+        String petName = cursor.getString(cursor.getColumnIndex(PetEntry.COLUMN_PET_NAME));
+        String petBreed = cursor.getString(cursor.getColumnIndex(PetEntry.COLUMN_PET_BREED));
+        int petGender = cursor.getInt(cursor.getColumnIndex(PetEntry.COLUMN_PET_GENDER));
+        int petWeight = cursor.getInt(cursor.getColumnIndex(PetEntry.COLUMN_PET_WEIGHT));
+
+        // Set the values for each field
+        mNameEditText.setText(petName);
+        mBreedEditText.setText(petBreed);
+        mWeightEditText.setText(Integer.toString(petWeight));
+        mGenderSpinner.setSelection(petGender);
+
+    }
+
+    @Override
+    public void onLoaderReset(Loader loader) {
+
+        mNameEditText.setText("");
+        mBreedEditText.setText("");
+        mGenderSpinner.setSelection(PetEntry.GENDER_UNKNOWN);
+        mWeightEditText.setText("");
+
+    }
+
+    /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+    public Action getIndexApiAction() {
+        Thing object = new Thing.Builder()
+                .setName("Editor Page") // TODO: Define a title for the content shown.
+                // TODO: Make sure this auto-generated URL is correct.
+                .setUrl(Uri.parse("http://[ENTER-YOUR-URL-HERE]"))
+                .build();
+        return new Action.Builder(Action.TYPE_VIEW)
+                .setObject(object)
+                .setActionStatus(Action.STATUS_TYPE_COMPLETED)
+                .build();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client.connect();
+        AppIndex.AppIndexApi.start(client, getIndexApiAction());
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        AppIndex.AppIndexApi.end(client, getIndexApiAction());
+        client.disconnect();
     }
 }

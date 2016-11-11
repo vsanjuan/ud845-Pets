@@ -101,6 +101,11 @@ public class PetProvider extends ContentProvider {
                 throw new IllegalArgumentException("Cannot query unknow URI " + uri);
         }
 
+//        Set notification URI on the cursor.
+        /* so we know what content URI the cursor was created for.*/
+        /* If the data at this URI changes, then we know we need to update the Cursor.*/
+        cursor.setNotificationUri(getContext().getContentResolver(), uri);
+
         return cursor;
     }
 
@@ -152,6 +157,9 @@ public class PetProvider extends ContentProvider {
             Log.e(LOG_TAG, "No insertion ");
             return null;
         }
+
+        // Notify all listeners that the data has changed for the pet content URI
+        getContext().getContentResolver().notifyChange(uri,null);
 
         // Once we know the ID of the new row in the table,
         // return the new URI with the ID appended to the end of it
@@ -218,6 +226,8 @@ public class PetProvider extends ContentProvider {
         // Update the values
         int numRows = db.update(PetEntry.TABLE_NAME, values, selection, selectionArgs);
 
+        // Notify all listeners that the data has changed for the pet content URI
+        getContext().getContentResolver().notifyChange(uri,null);
 
         // Return the number of rows that were affected
         return numRows;
@@ -235,12 +245,20 @@ public class PetProvider extends ContentProvider {
         final int match = sUriMatcher.match(uri);
         switch (match) {
             case PETS:
+
+                // Notify all listeners that the data has changed for the pet content URI
+                getContext().getContentResolver().notifyChange(uri,null);
+
                 // Delete all rows that match the selection and selection args
                 return database.delete(PetEntry.TABLE_NAME, selection, selectionArgs);
             case PET_ID:
                 // Delete a single row given by the ID in the URI
                 selection = PetEntry._ID + "=?";
                 selectionArgs = new String[]{String.valueOf(ContentUris.parseId(uri))};
+
+                // Notify all listeners that the data has changed for the pet content URI
+                getContext().getContentResolver().notifyChange(uri,null);
+
                 return database.delete(PetEntry.TABLE_NAME, selection, selectionArgs);
             default:
                 throw new IllegalArgumentException("Deletion is not supported for " + uri);
