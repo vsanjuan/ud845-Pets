@@ -199,28 +199,37 @@ public class EditorActivity extends AppCompatActivity
      */
     private void savePet() {
 
+        // Check if a new row has to be added or updated
 
-        // Insert a new row for pet in the database, returning the ID of that new row.
-        //long newRowId = db.insert(PetEntry.TABLE_NAME, null, values);
+        if (mCurrentUri == null) {
 
-        Uri uri = getContentResolver().insert(PetEntry.CONTENT_URI, getUserInput());
+            updatePet();
 
-        long newRowId = ContentUris.parseId(uri);
-
-        // Show a toast message depending on whether or not the insertion was successful
-        if (newRowId == -1) {
-            // If the row ID is -1, then there was an error with insertion.
-            Toast.makeText(this, R.string.error_saving, Toast.LENGTH_SHORT).show();
         } else {
-            // Otherwise, the insertion was successful and we can display a toast with the row ID.
-            Toast.makeText(this, R.string.success_saving,
-                    Toast.LENGTH_SHORT).show();
+
+            // Insert a new row for pet in the database, returning the ID of that new row.
+            //long newRowId = db.insert(PetEntry.TABLE_NAME, null, values);
+
+            Uri uri = getContentResolver().insert(PetEntry.CONTENT_URI, getUserInput());
+
+            long newRowId = ContentUris.parseId(uri);
+
+            // Show a toast message depending on whether or not the insertion was successful
+            if (newRowId == -1) {
+                // If the row ID is -1, then there was an error with insertion.
+                Toast.makeText(this, R.string.error_saving, Toast.LENGTH_SHORT).show();
+            } else {
+                // Otherwise, the insertion was successful and we can display a toast with the row ID.
+                Toast.makeText(this, R.string.success_saving,
+                        Toast.LENGTH_SHORT).show();
+
+            }
         }
     }
 
     private void updatePet() {
 
-        // Update row for pet in the database, returning the ID of that new row.
+        // Update row for pet in the database.
         String selection = PetEntry._ID + "=" ;
         String[] selectionArgs = {Integer.toString(cursorIndex)};
 
@@ -256,11 +265,12 @@ public class EditorActivity extends AppCompatActivity
             // Respond to a click on the "Save" menu option
             case R.id.action_save:
                 // Save pet to database
-                if (mCurrentUri == null) {
+                savePet();
+/*                if (mCurrentUri == null) {
                     savePet();
                 } else {
                     updatePet();
-                }
+                }*/
 
 
 
