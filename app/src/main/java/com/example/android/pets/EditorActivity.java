@@ -19,12 +19,12 @@ import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
+import android.content.CursorLoader;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.v4.app.LoaderManager;
+import android.app.LoaderManager;
 import android.support.v4.app.NavUtils;
-import android.support.v4.content.CursorLoader;
-import android.support.v4.content.Loader;
+import android.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.Log;
@@ -43,7 +43,7 @@ import com.example.android.pets.data.PetContract.PetEntry;
  * Allows user to create a new pet or edit an existing one.
  */
 public class EditorActivity extends AppCompatActivity implements
-        LoaderManager.LoaderCallbacks<Cursor>{
+        LoaderManager.LoaderCallbacks<Cursor> {
 
     /** EditText field to enter the pet's name */
     private EditText mNameEditText;
@@ -86,7 +86,7 @@ public class EditorActivity extends AppCompatActivity implements
         } else {
             // Otherwise this is an existing pet, so change app bar to say "Edit Pet"
             setTitle("Edit pet");
-            getSupportLoaderManager().initLoader(LOADER_ID,null,this);
+            getLoaderManager().initLoader(LOADER_ID,null,this);
         }
 
         // Find all relevant views that we will need to read user input from
@@ -217,7 +217,7 @@ public class EditorActivity extends AppCompatActivity implements
     }
 
     @Override
-    public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+    public android.content.Loader<Cursor> onCreateLoader(int id, Bundle args) {
 
         // Define a projection that specifies which columns from the database
         // you will actually use after this query.
@@ -244,6 +244,8 @@ public class EditorActivity extends AppCompatActivity implements
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
 
+        Log.v("onLoadFinished", Integer.toString(data.getCount()));
+
         if (data.moveToFirst()) {
 
             // Extract properties from cursor
@@ -268,7 +270,11 @@ public class EditorActivity extends AppCompatActivity implements
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
 
-        loader.reset();
+        // If the loader is invalidated, clear out all the data from the input fields.
+        mNameEditText.setText("");
+        mBreedEditText.setText("");
+        mWeightEditText.setText("");
+        mGenderSpinner.setSelection(0); // Select "Unknown" gender
 
     }
 }
