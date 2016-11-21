@@ -212,7 +212,10 @@ public class PetProvider extends ContentProvider {
 
         if (values.containsKey(PetEntry.COLUMN_PET_GENDER)) {
             int gender = values.getAsInteger(PetEntry.COLUMN_PET_GENDER);
-            if (gender != 0 || gender != 1 || gender != 2) {
+
+            // gender != 0 && gender != 1 && gender != 2
+
+            if (gender != 0 && gender != 1 && gender != 2) {
                 throw new IllegalArgumentException("Pet gender value must be between 0 and 2");
             }
         }

@@ -15,16 +15,16 @@
  */
 package com.example.android.pets;
 
+import android.app.LoaderManager;
 import android.content.ContentUris;
 import android.content.ContentValues;
-import android.content.Intent;
-import android.database.Cursor;
 import android.content.CursorLoader;
+import android.content.Intent;
+import android.content.Loader;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.app.LoaderManager;
 import android.support.v4.app.NavUtils;
-import android.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.Log;
@@ -97,7 +97,6 @@ public class EditorActivity extends AppCompatActivity implements
 
         setupSpinner();
 
-
     }
 
     /**
@@ -142,19 +141,13 @@ public class EditorActivity extends AppCompatActivity implements
     /**
      * Get user input from editor and save new pet into database.
      */
-    private void insertPet() {
+    private void savePet() {
         // Read from input fields
         // Use trim to eliminate leading or trailing white space
         String nameString = mNameEditText.getText().toString().trim();
         String breedString = mBreedEditText.getText().toString().trim();
         String weightString = mWeightEditText.getText().toString().trim();
         int weight = Integer.parseInt(weightString);
-
-        // Create database helper
-        //PetDbHelper mDbHelper = new PetDbHelper(this);
-
-        // Gets the database in write mode
-        //SQLiteDatabase db = mDbHelper.getWritableDatabase();
 
         // Create a ContentValues object where column names are the keys,
         // and pet attributes from the editor are the values.
@@ -164,23 +157,41 @@ public class EditorActivity extends AppCompatActivity implements
         values.put(PetEntry.COLUMN_PET_GENDER, mGender);
         values.put(PetEntry.COLUMN_PET_WEIGHT, weight);
 
-        // Insert a new row for pet in the database, returning the ID of that new row.
-        //long newRowId = db.insert(PetEntry.TABLE_NAME, null, values);
+        long newRowId;
 
-        //PetProvider petProvider = new PetProvider();
+        if (mCurrentUri == null) {
 
-        Uri uri = getContentResolver().insert(PetEntry.CONTENT_URI,values);
+            // Insert a new row for pet in the database, returning the ID of that new row.
+            Uri uri = getContentResolver().insert(PetEntry.CONTENT_URI,values);
 
-        long newRowId = ContentUris.parseId(uri);
+            newRowId = ContentUris.parseId(uri);
 
-        // Show a toast message depending on whether or not the insertion was successful
-        if (newRowId == -1) {
-            // If the row ID is -1, then there was an error with insertion.
-            Toast.makeText(this, R.string.error_saving, Toast.LENGTH_SHORT).show();
+            // Show a toast message depending on whether or not the insertion was successful
+            if (newRowId == -1) {
+                // If the row ID is -1, then there was an error with insertion.
+                Toast.makeText(this, R.string.error_saving, Toast.LENGTH_SHORT).show();
+            } else {
+                // Otherwise, the insertion was successful and we can display a toast with the row ID.
+                Toast.makeText(this, R.string.success_saving ,
+                        Toast.LENGTH_SHORT).show();
+            }
+
         } else {
-            // Otherwise, the insertion was successful and we can display a toast with the row ID.
-            Toast.makeText(this, R.string.success_saving ,
-                    Toast.LENGTH_SHORT).show();
+
+            Log.v("Edit Pet", mCurrentUri.toString());
+
+            int rowsAffected = getContentResolver().update(mCurrentUri,values,null,null);
+
+            if (rowsAffected == 0 ) {
+
+                // If no rows were affected, then there was an error with the update.
+                Toast.makeText(this, getString(R.string.error_saving),
+                        Toast.LENGTH_SHORT).show();
+            } else  {
+
+                Toast.makeText(this, "Saved Pet", Toast.LENGTH_SHORT).show();
+
+            }
         }
     }
 
@@ -199,7 +210,7 @@ public class EditorActivity extends AppCompatActivity implements
             // Respond to a click on the "Save" menu option
             case R.id.action_save:
                 // Save pet to database
-                insertPet();
+                savePet();
                 // Exit activity
                 finish();
                 return true;
@@ -253,6 +264,8 @@ public class EditorActivity extends AppCompatActivity implements
             String breed = data.getString(data.getColumnIndexOrThrow(PetEntry.COLUMN_PET_BREED));
             int gender = data.getInt(data.getColumnIndexOrThrow(PetEntry.COLUMN_PET_GENDER));
             int weight = data.getInt(data.getColumnIndexOrThrow(PetEntry.COLUMN_PET_WEIGHT));
+
+            Log.i("Pet Gender", Integer.toString(gender));
 
             // Set the values on the view
             mNameEditText.setText(name);
